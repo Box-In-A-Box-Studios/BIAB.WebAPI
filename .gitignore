@@ -1,0 +1,10 @@
+# Editor Folders
+.idea/
+.vs/
+
+# Built application files
+[Bb]in/
+[Oo]bj/
+
+# Any Database files
+*.db
