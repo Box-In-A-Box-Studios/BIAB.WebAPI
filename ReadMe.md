@@ -1,5 +1,5 @@
-# Box in a Box .Net 6 Web API Library
-Adds a extensions for .Net 6 Web APIs to more easily configure Authentication, Authorization, and CORS.
+# Box in a Box Web API Library
+Adds a extensions for .Net 6 and .Net 7 Web APIs to more easily configure Authentication, Authorization, and CORS.
 
 ## Getting Started
 ### Installation
