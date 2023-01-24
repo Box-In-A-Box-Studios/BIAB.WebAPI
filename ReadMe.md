@@ -3,13 +3,19 @@ Adds a extensions for .Net 6 and .Net 7 Web APIs to more easily configure Authen
 
 ## Getting Started
 ### Installation
-For now the library must be installed from source.  The library is not yet published to NuGet.
+#### Option 1: From Source
 1. Get a copy of a Release DLL.
 2. Open your project in Visual Studio.
 3. Right click on your project and select "Add Reference".
 4. Select "Browse" and navigate to the DLL.
 5. Select the DLL and click "Add".
 6. Click "OK" to close the "Add Reference" dialog.
+
+#### Option 2: From NuGet
+1. Open your project in Visual Studio.
+2. Right click on your project and select "Manage NuGet Packages".
+3. Select "Browse" and search for "BIAB.WebAPI".
+4. Select the package and click "Install".
 
 ### Usage
 Here is an Example Program.cs file that uses the library.
