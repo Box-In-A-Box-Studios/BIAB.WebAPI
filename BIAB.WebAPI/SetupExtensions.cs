@@ -1,4 +1,6 @@
 ﻿using System.Text;
+using BIAB.WebAPI.Enums;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Identity;
@@ -12,33 +14,82 @@ namespace BIAB.WebAPI;
 
 public static class SetupExtensions
 {
+    private static TokenValidationParameters _defaultTokenValidationParameters(ApiSettings settings)
+    {
+        return new TokenValidationParameters()
+        {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            RequireExpirationTime = true,
+            RequireSignedTokens = true,
+            RequireAudience = true,
+            ValidAudience = settings.JwtAudience,
+            ValidIssuer = settings.JwtIssuer,
+        };
+    }
+
     /// <summary>
     /// Adds a basic JWT authentication scheme to the application.
     /// </summary>
     /// <param name="services"></param>
     /// <param name="settings"></param>
+    /// <param name="period">Rolling Period</param>
+    /// <param name="authenticationOptions"></param>
+    /// <param name="jwtBearerOptions"></param>
     /// <returns></returns>
-    public static IServiceCollection AddJwtAuthentication(this IServiceCollection services, ApiSettings settings)
+    public static IServiceCollection AddJwtAuthentication(this IServiceCollection services, ApiSettings settings, RollingPeriod period = RollingPeriod.None, 
+        Action<AuthenticationOptions>? authenticationOptions = null, Action<JwtBearerOptions>? jwtBearerOptions = null)
     {
-        services.AddAuthentication(options =>
+        authenticationOptions ??= options =>
+        {
+            options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+            options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+            options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
+        };
+        
+        if (jwtBearerOptions == null)
+        {
+            TokenValidationParameters tokenValidationParameters = _defaultTokenValidationParameters(settings);
+            if (period == RollingPeriod.None)
             {
-                options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-                options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-                options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
-            })
-            .AddJwtBearer(options =>
+                tokenValidationParameters.IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(settings.JwtSecret));
+            }
+            else
+            {
+                tokenValidationParameters.IssuerSigningKeyResolver = (_, _, _, _) =>
+                {
+                    // use the jwt secret as a base for the rolling key
+                    // then use the current date to generate a new key
+
+                    // get the current date
+                    var now = DateTime.UtcNow;
+
+                    var secretString = period switch
+                    {
+                        RollingPeriod.None => settings.JwtSecret,
+                        RollingPeriod.Daily => $"{settings.JwtSecret}{now:yyyy-MM-dd}",
+                        RollingPeriod.Monthly => $"{settings.JwtSecret}{now:yyyy-MM}",
+                        RollingPeriod.Weekly => $"{settings.JwtSecret}{now:yyyy}-{now:MM}-{now:dd}",
+                        RollingPeriod.Yearly => $"{settings.JwtSecret}{now:yyyy}",
+                        _ => throw new ArgumentOutOfRangeException(nameof(period), period, null)
+                    };
+
+                    SymmetricSecurityKey secret = new(Encoding.UTF8.GetBytes(secretString));
+
+                    return new[] { secret };
+                };
+            }
+        
+            jwtBearerOptions = options =>
             {
                 options.SaveToken = true;
                 options.RequireHttpsMetadata = false;
-                options.TokenValidationParameters = new TokenValidationParameters()
-                {
-                    ValidateIssuer = true,
-                    ValidateAudience = true,
-                    ValidAudience = settings.JwtAudience,
-                    ValidIssuer = settings.JwtIssuer,
-                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(settings.JwtSecret))
-                };
-            });
+                options.TokenValidationParameters = tokenValidationParameters;
+            };
+        }
+        
+        services.AddAuthentication(authenticationOptions).AddJwtBearer(jwtBearerOptions);
+        
         return services;
     }
     
@@ -50,17 +101,18 @@ public static class SetupExtensions
     /// <typeparam name="TRole"></typeparam>
     /// <typeparam name="TDb"></typeparam>
     /// <returns></returns>
-    public static IServiceCollection AddBasicIdentity<TUser, TRole, TDb>(this IServiceCollection services)
+    public static IServiceCollection AddBasicIdentity<TUser, TRole, TDb>(this IServiceCollection services, Action<IdentityOptions>? options = null)
         where TUser : IdentityUser where TRole : IdentityRole where TDb : IdentityDbContext<TUser>
     {
-        services.AddIdentity<TUser, TRole>(o =>
-            {
-                o.Password.RequireDigit = true;
-                o.Password.RequireLowercase = true;
-                o.Password.RequireUppercase = true;
-                o.Password.RequireNonAlphanumeric = true;
-                o.Password.RequiredLength = 7;
-            })
+        options ??= o =>
+        {
+            o.Password.RequireDigit = true;
+            o.Password.RequireLowercase = true;
+            o.Password.RequireUppercase = true;
+            o.Password.RequireNonAlphanumeric = true;
+            o.Password.RequiredLength = 7;
+        };
+        services.AddIdentity<TUser, TRole>(options)
             .AddEntityFrameworkStores<TDb>()
             .AddDefaultTokenProviders();
         return services;
