@@ -9,7 +9,8 @@
         <Title>Box In A Box Web API Library</Title>
         <Authors>GTextreme169</Authors>
         <RepositoryUrl>https://github.com/GTextreme169/BIAB.WebAPI</RepositoryUrl>
-        <TargetFrameworks>net6.0;net7.0</TargetFrameworks> 
+        <TargetFrameworks>net6.0;net7.0</TargetFrameworks>
+        <PackageReadmeFile>ReadMe.md</PackageReadmeFile>
     </PropertyGroup>
 
     <ItemGroup Condition=" '$(TargetFramework)' == 'net6.0' ">
@@ -24,6 +25,10 @@
         <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="7.0.*" />
         <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="7.0.*" />
         <PackageReference Include="Swashbuckle.AspNetCore" Version="6.5.0" />
+    </ItemGroup>
+    
+    <ItemGroup>
+        <None Include="../ReadMe.md" Pack="true" PackagePath="\"/>
     </ItemGroup>
 
 </Project>
