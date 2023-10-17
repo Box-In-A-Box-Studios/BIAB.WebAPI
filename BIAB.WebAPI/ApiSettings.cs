@@ -38,7 +38,26 @@ public class ApiSettings
     
     // JWT Audience for Signing Tokens
     public string JwtAudience => Configuration?["JwtAudience"] ?? "localhost:7214";
-    
-    // Database Connection String
-    public string DbConnectionString => Configuration?.GetConnectionString("BudgetContext") ?? "Data Source=Budgeting.db";
+
+    public DatabaseConnectionSettings[] DatabaseConnectionSettings => Configuration?.GetSection("DatabaseConnectionSettings").Get<DatabaseConnectionSettings[]>() ?? Array.Empty<DatabaseConnectionSettings>();
+    public DatabaseConnectionSettings? GetDatabaseConnectionSettings(string contextName)
+    {
+        return DatabaseConnectionSettings.FirstOrDefault(x => String.Equals(x.ContextName, contextName, StringComparison.CurrentCultureIgnoreCase));
+    }
+}
+
+public class DatabaseConnectionSettings
+{
+    public string ContextName { get; set; } = null!;
+    public string ConnectionString { get; set; } = null!;
+    public string Provider { get; set; } = null!;
+    public string? MigrationAssembly { get; set; }
+}
+
+public class DbProviders
+{
+    public const string InMemory = "InMemory";
+    public const string Sqlite = "Sqlite";
+    public const string SqlServer = "SqlServer";
+    public const string Postgres = "Postgres";
 }
