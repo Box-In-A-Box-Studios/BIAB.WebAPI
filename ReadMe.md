@@ -65,7 +65,7 @@ app.UseJwtAuthentication();
 // Basic WebApi Steps
 app.MapControllers();
 
-// Basic Api Endpoints for JWT Authentication (Register, Login)
+// Basic Api Endpoints for JWT Authentication (Register, Login, Refresh, and Revoke)
 app.MapJwtEndpoints(settings, async (RegisterModel model) => new IdentityUser
 {
     UserName = model.Email,

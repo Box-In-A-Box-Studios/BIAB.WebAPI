@@ -267,34 +267,79 @@ public static class SetupExtensions
             var user = await userManager.FindByEmailAsync(model.Email);
             if (user != null && await userManager.CheckPasswordAsync(user, model.Password))
             {
-                var claims = new List<Claim>
-                {
-                    new Claim(ClaimTypes.Name, user.UserName!),
-                    new Claim(ClaimTypes.Email, user.Email!),
-                };
-                var roles = await userManager.GetRolesAsync(user);
-                claims.AddRange(roles.Select(role => new Claim(ClaimTypes.Role, role)));
-                var claimsIdentity = new ClaimsIdentity(claims, "jwt");
-                
-                // Create JWT Token with valid issuer and audience
-                var tokenHandler = new JwtSecurityTokenHandler();
-                var key = Encoding.ASCII.GetBytes(settings.JwtSecret);
-                var tokenDescriptor = new SecurityTokenDescriptor
-                {
-                    Subject = claimsIdentity,
-                    Expires = getExpireTime(),
-                    SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature),
-                    Issuer = settings.JwtIssuer,
-                    Audience = settings.JwtAudience
-                };
-                var token = tokenHandler.CreateToken(tokenDescriptor);
-                return Results.Ok(new { Token = tokenHandler.WriteToken(token) });
+                return await GetTokenResult(settings, getExpireTime, user, userManager);
             }
             else
             {
                 return Results.BadRequest("Username or password incorrect.");
             }
         });
+        
+        // Refresh a token
+        app.MapPost("/auth/refresh", async (ClaimsPrincipal user, UserManager<TUser> userManager) =>
+        {
+            var identityUser = await userManager.FindByEmailAsync(user.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Email)?.Value ?? throw new UnauthorizedAccessException());
+            if (identityUser != null)
+            {
+                return await GetTokenResult(settings, getExpireTime, identityUser, userManager);
+            }
+            else
+            {
+                return Results.BadRequest("User not found.");
+            }
+        }).RequireAuthorization();
+        
+        // Revoke a token
+        app.MapPost("/auth/revoke", async (ClaimsPrincipal user, UserManager<TUser> userManager) =>
+        {
+            var identityUser = await userManager.FindByEmailAsync(user.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Email)?.Value ?? throw new UnauthorizedAccessException());
+            if (identityUser != null)
+            {
+                await userManager.UpdateSecurityStampAsync(identityUser);
+                return Results.Ok();
+            }
+            else
+            {
+                return Results.BadRequest("User not found.");
+            }
+        }).RequireAuthorization();
+    }
+
+    /// <summary>
+    /// Creates a Token Result for a User
+    /// </summary>
+    /// <param name="settings"></param>
+    /// <param name="getExpireTime"></param>
+    /// <param name="identityUser"></param>
+    /// <param name="userManager"></param>
+    /// <typeparam name="TUser"></typeparam>
+    /// <returns></returns>
+    private static async Task<IResult> GetTokenResult<TUser>(ApiSettings settings, GetDateTimeDelegate getExpireTime,
+        TUser identityUser, UserManager<TUser> userManager) where TUser : IdentityUser
+    {
+        var claims = new List<Claim>
+        {
+            new Claim(ClaimTypes.Name, identityUser.UserName!),
+            new Claim(ClaimTypes.Email, identityUser.Email!),
+        };
+        var roles = await userManager.GetRolesAsync(identityUser);
+        claims.AddRange(roles.Select(role => new Claim(ClaimTypes.Role, role)));
+        var claimsIdentity = new ClaimsIdentity(claims, "jwt");
+
+        // Create JWT Token with valid issuer and audience
+        var tokenHandler = new JwtSecurityTokenHandler();
+        var key = Encoding.ASCII.GetBytes(settings.JwtSecret);
+        var tokenDescriptor = new SecurityTokenDescriptor
+        {
+            Subject = claimsIdentity,
+            Expires = getExpireTime(),
+            SigningCredentials =
+                new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature),
+            Issuer = settings.JwtIssuer,
+            Audience = settings.JwtAudience
+        };
+        var token = tokenHandler.CreateToken(tokenDescriptor);
+        return Results.Ok(new { Token = tokenHandler.WriteToken(token) });
     }
 
     /// <summary>
