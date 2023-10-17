@@ -224,40 +224,17 @@ public static class SetupExtensions
     
     
     /// <summary>
-    /// Adds Login and Register Endpoints for JWT Authentication
+    /// Adds Login, Refresh, and Revoke Endpoints for JWT Authentication
     /// </summary>
     /// <param name="app"></param>
     /// <param name="settings"></param>
-    /// <param name="getUserDelegate"></param>
     /// <param name="getExpireTime"></param>
     /// <typeparam name="TModel"></typeparam>
     /// <typeparam name="TUser"></typeparam>
-    public static void MapJwtEndpoints<TModel, TUser>(this WebApplication app, ApiSettings settings, GetUserDelegate<TModel, TUser> getUserDelegate, GetDateTimeDelegate? getExpireTime = null) where TUser : IdentityUser where TModel : RegisterModel
+    public static void MapJwtEndpoints<TUser>(this WebApplication app, ApiSettings settings, GetDateTimeDelegate? getExpireTime = null) where TUser : IdentityUser
     {
-        // Basic Api Endpoints for JWT Authentication
-        // Using Minimal api
-        
         getExpireTime ??= () => DateTime.UtcNow.AddDays(7);
-        
-        // Register a new user
-        app.MapPost("/auth/register", async (TModel model, UserManager<TUser> userManager) =>
-        {
-            if (string.IsNullOrEmpty(model.Email) || string.IsNullOrEmpty(model.Password))
-                return Results.BadRequest();
-            
-            // Create User
-            var user = await getUserDelegate(model);
-            var result = await userManager.CreateAsync(user, model.Password);
-            if (result.Succeeded)
-            {
-                return Results.Ok();
-            }
-            else
-            {
-                return Results.BadRequest(result.Errors);
-            }
-        });
-        
+
         // Login a user
         app.MapPost("/auth/login", async (LoginModel model, UserManager<TUser> userManager) =>
         {
@@ -304,6 +281,35 @@ public static class SetupExtensions
             }
         }).RequireAuthorization();
     }
+    
+    /// <summary>
+    /// Adds Register Endpoint for JWT Authentication
+    /// </summary>
+    /// <param name="app"></param>
+    /// <param name="getUserDelegate"></param>
+    /// <typeparam name="TModel"></typeparam>
+    /// <typeparam name="TUser"></typeparam>
+    public static void MapJwtRegisterEndpoint<TModel, TUser>(this WebApplication app, GetUserDelegate<TModel, TUser> getUserDelegate) where TUser : IdentityUser where TModel : RegisterModel
+    {
+        // Register a new user
+        app.MapPost("/auth/register", async (TModel model, UserManager<TUser> userManager) =>
+        {
+            if (string.IsNullOrEmpty(model.Email) || string.IsNullOrEmpty(model.Password))
+                return Results.BadRequest();
+            
+            // Create User
+            var user = await getUserDelegate(model);
+            var result = await userManager.CreateAsync(user, model.Password);
+            if (result.Succeeded)
+            {
+                return Results.Ok();
+            }
+            else
+            {
+                return Results.BadRequest(result.Errors);
+            }
+        });
+    }
 
     /// <summary>
     /// Creates a Token Result for a User
@@ -346,10 +352,10 @@ public static class SetupExtensions
     /// Adds a Delete Endpoint for Accounts
     /// </summary>
     /// <param name="app"></param>
-    public static void MapJwtDeleteEndpoint(this WebApplication app)
+    public static void MapJwtDeleteEndpoint<TUser>(this WebApplication app) where TUser : IdentityUser
     {
         // Delete a user
-        app.MapDelete("/auth/delete", async (ClaimsPrincipal user, UserManager<IdentityUser> userManager) =>
+        app.MapDelete("/auth/delete", async (ClaimsPrincipal user, UserManager<TUser> userManager) =>
         {
             var identityUser = await userManager.FindByEmailAsync(user.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Email)?.Value ?? throw new UnauthorizedAccessException());
             if (identityUser != null)

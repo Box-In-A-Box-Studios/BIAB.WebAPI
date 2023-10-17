@@ -66,12 +66,13 @@ app.UseJwtAuthentication();
 app.MapControllers();
 
 // Basic Api Endpoints for JWT Authentication (Register, Login, Refresh, and Revoke)
-app.MapJwtEndpoints(settings, async (RegisterModel model) => new IdentityUser
+app.MapJwtEndpoints<IdentityUser>(settings);
+app.MapJwtRegisterEndpoint(async (RegisterModel model) => new IdentityUser
 {
     UserName = model.Email,
     Email = model.Email
 });
-app.MapJwtDeleteEndpoint(); // Adds the ability to delete an account.
+app.MapJwtDeleteEndpoint<IdentityUser>(); // Adds the ability to delete an account.
 
 // Run Migrations Automatically for EF Core DbContexts
 app.AutoMigrateDb<IdentityDbContext>();
