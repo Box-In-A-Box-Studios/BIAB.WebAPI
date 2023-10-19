@@ -2,7 +2,8 @@
 using System.Security.Claims;
 using System.Text;
 using BIAB.WebAPI.Enums;
-using BIAB.WebAPI.Models;
+using BIAB.WebAPI.Shared.Models;
+using BIAB.WebAPI.Shared.Responses;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
@@ -345,7 +346,12 @@ public static class SetupExtensions
             Audience = settings.JwtAudience
         };
         var token = tokenHandler.CreateToken(tokenDescriptor);
-        return Results.Ok(new { Token = tokenHandler.WriteToken(token) });
+        LoginResponse response = new LoginResponse
+        {
+            Token = tokenHandler.WriteToken(token),
+            Expiration = token.ValidTo
+        };
+        return Results.Ok(response);
     }
 
     /// <summary>

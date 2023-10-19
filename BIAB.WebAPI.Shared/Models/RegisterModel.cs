@@ -1,7 +1,6 @@
-﻿namespace BIAB.WebAPI.Models;
+namespace BIAB.WebAPI.Shared.Models;
 
-
-public class LoginModel
+public class RegisterModel
 {
     public string Email { get; set; } = null!;
     public string Password { get; set; } = null!;
