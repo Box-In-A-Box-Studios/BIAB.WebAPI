@@ -1,3 +1,4 @@
+[![Maintainability](https://api.codeclimate.com/v1/badges/64a636697d1a7ed441b1/maintainability)](https://codeclimate.com/github/Box-In-A-Box-Studios/BIAB.WebAPI/maintainability)
 # Box in a Box Web API Library
 Adds a extensions for .Net 6 and .Net 7 Web APIs to more easily configure Authentication, Authorization, and CORS.
 
