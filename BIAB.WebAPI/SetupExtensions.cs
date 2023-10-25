@@ -56,35 +56,10 @@ public static class SetupExtensions
         {
             TokenValidationParameters tokenValidationParameters = _defaultTokenValidationParameters(settings);
             if (period == RollingPeriod.None)
-            {
                 tokenValidationParameters.IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(settings.JwtSecret));
-            }
             else
-            {
-                tokenValidationParameters.IssuerSigningKeyResolver = (_, _, _, _) =>
-                {
-                    // use the jwt secret as a base for the rolling key
-                    // then use the current date to generate a new key
-
-                    // get the current date
-                    var now = DateTime.UtcNow;
-
-                    var secretString = period switch
-                    {
-                        RollingPeriod.None => settings.JwtSecret,
-                        RollingPeriod.Daily => $"{settings.JwtSecret}{now:yyyy-MM-dd}",
-                        RollingPeriod.Monthly => $"{settings.JwtSecret}{now:yyyy-MM}",
-                        RollingPeriod.Weekly => $"{settings.JwtSecret}{now:yyyy}-{now:MM}-{now:dd}",
-                        RollingPeriod.Yearly => $"{settings.JwtSecret}{now:yyyy}",
-                        _ => throw new ArgumentOutOfRangeException(nameof(period), period, null)
-                    };
-
-                    SymmetricSecurityKey secret = new(Encoding.UTF8.GetBytes(secretString));
-
-                    return new[] { secret };
-                };
-            }
-        
+                tokenValidationParameters.IssuerSigningKeyResolver = RollingIssuerSigningKeyResolver(settings, period);
+            
             jwtBearerOptions = options =>
             {
                 options.SaveToken = true;
@@ -97,7 +72,33 @@ public static class SetupExtensions
         
         return services;
     }
-    
+
+    private static IssuerSigningKeyResolver RollingIssuerSigningKeyResolver(ApiSettings settings, RollingPeriod period)
+    {
+        return (_, _, _, _) =>
+        {
+            // use the jwt secret as a base for the rolling key
+            // then use the current date to generate a new key
+
+            // get the current date
+            var now = DateTime.UtcNow;
+
+            var secretString = period switch
+            {
+                RollingPeriod.None => settings.JwtSecret,
+                RollingPeriod.Daily => $"{settings.JwtSecret}{now:yyyy-MM-dd}",
+                RollingPeriod.Monthly => $"{settings.JwtSecret}{now:yyyy-MM}",
+                RollingPeriod.Weekly => $"{settings.JwtSecret}{now:yyyy}-{now:MM}-{now:dd}",
+                RollingPeriod.Yearly => $"{settings.JwtSecret}{now:yyyy}",
+                _ => throw new ArgumentOutOfRangeException(nameof(period), period, null)
+            };
+
+            SymmetricSecurityKey secret = new(Encoding.UTF8.GetBytes(secretString));
+
+            return new[] { secret };
+        };
+    }
+
     /// <summary>
     /// Adds Identity With Password Requirements to the Application.
     /// </summary>
@@ -251,30 +252,24 @@ public static class SetupExtensions
             
             var user = await userManager.FindByEmailAsync(model.Email);
             if (user != null && await userManager.CheckPasswordAsync(user, model.Password))
-            {
                 return await GetTokenResult(settings, getExpireTime, user, userManager);
-            }
-            else
-            {
-                return Results.BadRequest("Username or password incorrect.");
-            }
+            return Results.BadRequest("Username or password incorrect.");
         });
         
         // Refresh a token
-        app.MapPost("/auth/refresh", async (ClaimsPrincipal user, UserManager<TUser> userManager) =>
-        {
-            return await RunAuthenticated(userManager, user, async identityUser => await GetTokenResult(settings, getExpireTime, identityUser, userManager));
-        }).RequireAuthorization();
+        app.MapPost("/auth/refresh", async (ClaimsPrincipal user, UserManager<TUser> userManager) => 
+            await RunAuthenticated(userManager, user, async identityUser => 
+                await GetTokenResult(settings, getExpireTime, identityUser, userManager))
+            ).RequireAuthorization();
         
         // Revoke a token
-        app.MapPost("/auth/revoke", async (ClaimsPrincipal user, UserManager<TUser> userManager) =>
-        {
-            return await RunAuthenticated(userManager, user, async identityUser =>
+        app.MapPost("/auth/revoke", async (ClaimsPrincipal user, UserManager<TUser> userManager) => 
+            await RunAuthenticated(userManager, user, async identityUser =>
             {
                 await userManager.UpdateSecurityStampAsync(identityUser);
                 return Results.Ok();
-            });
-        }).RequireAuthorization();
+            })
+            ).RequireAuthorization();
     }
     
     /// <summary>
