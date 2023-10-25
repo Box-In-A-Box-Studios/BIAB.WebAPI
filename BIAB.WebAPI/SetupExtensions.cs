@@ -223,6 +223,13 @@ public static class SetupExtensions
     /// </summary>
     public delegate DateTime GetDateTimeDelegate();
     
+    private static async Task<IResult> RunAuthenticated<TUser>(UserManager<TUser> manager, ClaimsPrincipal user,
+        Func<TUser, Task<IResult>> authenticatedAction) where TUser : IdentityUser
+    {
+        var identityUser = await manager.FindByEmailAsync(user.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Email)?.Value ?? throw new UnauthorizedAccessException());
+        return identityUser != null ? await authenticatedAction(identityUser) : Results.BadRequest("User not found.");
+    }
+
     
     /// <summary>
     /// Adds Login, Refresh, and Revoke Endpoints for JWT Authentication
@@ -235,7 +242,7 @@ public static class SetupExtensions
     public static void MapJwtEndpoints<TUser>(this WebApplication app, ApiSettings settings, GetDateTimeDelegate? getExpireTime = null) where TUser : IdentityUser
     {
         getExpireTime ??= () => DateTime.UtcNow.AddDays(7);
-
+        
         // Login a user
         app.MapPost("/auth/login", async (LoginModel model, UserManager<TUser> userManager) =>
         {
@@ -256,30 +263,17 @@ public static class SetupExtensions
         // Refresh a token
         app.MapPost("/auth/refresh", async (ClaimsPrincipal user, UserManager<TUser> userManager) =>
         {
-            var identityUser = await userManager.FindByEmailAsync(user.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Email)?.Value ?? throw new UnauthorizedAccessException());
-            if (identityUser != null)
-            {
-                return await GetTokenResult(settings, getExpireTime, identityUser, userManager);
-            }
-            else
-            {
-                return Results.BadRequest("User not found.");
-            }
+            return await RunAuthenticated(userManager, user, async identityUser => await GetTokenResult(settings, getExpireTime, identityUser, userManager));
         }).RequireAuthorization();
         
         // Revoke a token
         app.MapPost("/auth/revoke", async (ClaimsPrincipal user, UserManager<TUser> userManager) =>
         {
-            var identityUser = await userManager.FindByEmailAsync(user.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Email)?.Value ?? throw new UnauthorizedAccessException());
-            if (identityUser != null)
+            return await RunAuthenticated(userManager, user, async identityUser =>
             {
                 await userManager.UpdateSecurityStampAsync(identityUser);
                 return Results.Ok();
-            }
-            else
-            {
-                return Results.BadRequest("User not found.");
-            }
+            });
         }).RequireAuthorization();
     }
     
@@ -301,14 +295,7 @@ public static class SetupExtensions
             // Create User
             var user = await getUserDelegate(model);
             var result = await userManager.CreateAsync(user, model.Password);
-            if (result.Succeeded)
-            {
-                return Results.Ok();
-            }
-            else
-            {
-                return Results.BadRequest(result.Errors);
-            }
+            return result.Succeeded ? Results.Ok() : Results.BadRequest(result.Errors);
         });
     }
 
@@ -362,24 +349,10 @@ public static class SetupExtensions
     {
         // Delete a user
         app.MapDelete("/auth/delete", async (ClaimsPrincipal user, UserManager<TUser> userManager) =>
+        await RunAuthenticated(userManager, user, async identityUser =>
         {
-            var identityUser = await userManager.FindByEmailAsync(user.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Email)?.Value ?? throw new UnauthorizedAccessException());
-            if (identityUser != null)
-            {
-                var result = await userManager.DeleteAsync(identityUser);
-                if (result.Succeeded)
-                {
-                    return Results.Ok();
-                }
-                else
-                {
-                    return Results.BadRequest(result.Errors);
-                }
-            }
-            else
-            {
-                return Results.BadRequest("User not found.");
-            }
-        }).RequireAuthorization();
+            var result = await userManager.DeleteAsync(identityUser);
+            return result.Succeeded ? Results.Ok() : Results.BadRequest(result.Errors);
+        })).RequireAuthorization();
     }
 }

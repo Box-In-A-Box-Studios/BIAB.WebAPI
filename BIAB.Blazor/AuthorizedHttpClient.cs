@@ -99,79 +99,23 @@ public class AuthorizedHttpClient
     #region Overloads for HttpClient methods
 
     // Overload for GetFromJsonAsync
-    public async Task<HttpResponseWrapper<T>> GetFromJsonAsync<T>(string requestUri, bool allowUnauthorized = false)
-    {
-        if (!IsAuthorized && !allowUnauthorized)
-        {
-            return new HttpResponseWrapper<T>(default, false, HttpStatusCode.Unauthorized);
-        }
-        
-        try
-        {
-            var value = await HttpClient.GetFromJsonAsync<T>(requestUri);
-            return new HttpResponseWrapper<T>(value, true, null);
-        }
-        catch (UnauthorizedAccessException)
-        {
-            Logout();
-            throw;
-        }
-        catch (HttpRequestException e)
-        {
-            return new HttpResponseWrapper<T>(default, false, e.StatusCode);
-        }
-    }
+    public async Task<HttpResponseWrapper<T>> GetFromJsonAsync<T>(string requestUri, bool allowUnauthorized = false) =>
+        await AuthenticatedAsync<T>(HttpClient.GetAsync(requestUri), allowUnauthorized);
     
     // Overload for PostAsJsonAsync
-    public async Task<HttpResponseWrapper<T>> PostAsJsonAsync<T>(string requestUri, object? content, bool allowUnauthorized = false)
-    {
-        if (!IsAuthorized && !allowUnauthorized)
-        {
-            return new HttpResponseWrapper<T>(default, false, HttpStatusCode.Unauthorized);
-        }
-        
-        try
-        {
-            var value = await HttpClient.PostAsJsonAsync(requestUri, content);
-            return new HttpResponseWrapper<T>(await value.Content.ReadFromJsonAsync<T>(), true, value.StatusCode);
-        }
-        catch (UnauthorizedAccessException)
-        {
-            Logout();
-            throw;
-        }
-        catch (HttpRequestException e)
-        {
-            return new HttpResponseWrapper<T>(default, false, e.StatusCode);
-        }
-    }
-    
+    public async Task<HttpResponseWrapper<T>> PostAsJsonAsync<T>(string requestUri, object? content, bool allowUnauthorized = false) =>
+        await AuthenticatedAsync<T>(HttpClient.PostAsJsonAsync(requestUri, content), allowUnauthorized);
+
     // Overload for PutAsJsonAsync
-    public async Task<HttpResponseWrapper<T>> PutAsJsonAsync<T>(string requestUri, object? content, bool allowUnauthorized = false)
-    {
-        if (!IsAuthorized && !allowUnauthorized)
-        {
-            return new HttpResponseWrapper<T>(default, false, HttpStatusCode.Unauthorized);
-        }
-        
-        try
-        {
-            var value = await HttpClient.PutAsJsonAsync(requestUri, content);
-            return new HttpResponseWrapper<T>(await value.Content.ReadFromJsonAsync<T>(), true, value.StatusCode);
-        }
-        catch (UnauthorizedAccessException)
-        {
-            Logout();
-            throw;
-        }
-        catch (HttpRequestException e)
-        {
-            return new HttpResponseWrapper<T>(default, false, e.StatusCode);
-        }
-    }
+    public async Task<HttpResponseWrapper<T>> PutAsJsonAsync<T>(string requestUri, object? content, bool allowUnauthorized = false) => 
+        await AuthenticatedAsync<T>(HttpClient.PutAsJsonAsync(requestUri, content),allowUnauthorized);
     
     // Overload for DeleteAsync
-    public async Task<HttpResponseWrapper<T>> DeleteAsync<T>(string requestUri, bool allowUnauthorized = false)
+    public async Task<HttpResponseWrapper<T>> DeleteAsync<T>(string requestUri, bool allowUnauthorized = false) => 
+        await AuthenticatedAsync<T>(HttpClient.DeleteAsync(requestUri), allowUnauthorized);
+
+    // Function For Abstraction
+    private async Task<HttpResponseWrapper<T>> AuthenticatedAsync<T>(Task<HttpResponseMessage> method, bool allowUnauthorized = false)
     {
         if (!IsAuthorized && !allowUnauthorized)
         {
@@ -180,7 +124,7 @@ public class AuthorizedHttpClient
         
         try
         {
-            var value = await HttpClient.DeleteAsync(requestUri);
+            var value = await method;
             return new HttpResponseWrapper<T>(await value.Content.ReadFromJsonAsync<T>(), true, value.StatusCode);
         }
         catch (UnauthorizedAccessException)
