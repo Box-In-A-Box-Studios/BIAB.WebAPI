@@ -1,6 +1,7 @@
 ﻿using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using BIAB.WebAPI.Shared.Models;
 using BIAB.WebAPI.Shared.Responses;
 
 namespace BIAB.Blazor;
@@ -49,7 +50,12 @@ public class AuthorizedHttpClient
     // Login method to set the authorization header
     public async Task<bool> AttemptLogin(string username, string password)
     {
-        LoginResponse? response = await HttpClient.GetFromJsonAsync<LoginResponse>("/auth/login");
+        LoginModel model = new LoginModel
+        {
+            Email = username,
+            Password = password
+        };
+        LoginResponse? response = await PostAsJsonAsync<LoginResponse>("/auth/login", model, true);
         if (response != null)
         {
             HttpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", response.Token);
@@ -80,7 +86,7 @@ public class AuthorizedHttpClient
     // Refresh method to refresh the authorization header
     public async Task<bool> Refresh()
     {
-        LoginResponse? response = await HttpClient.GetFromJsonAsync<LoginResponse>("/auth/refresh");
+        LoginResponse? response = await PostAsJsonAsync<LoginResponse>("/auth/refresh", null);
         if (response != null)
         {
             HttpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", response.Token);
@@ -125,12 +131,13 @@ public class AuthorizedHttpClient
         try
         {
             var value = await method;
-            return new HttpResponseWrapper<T>(await value.Content.ReadFromJsonAsync<T>(), true, value.StatusCode);
-        }
-        catch (UnauthorizedAccessException)
-        {
-            Logout();
-            throw;
+            if (value.IsSuccessStatusCode)
+                return new HttpResponseWrapper<T>(await value.Content.ReadFromJsonAsync<T>(), true, value.StatusCode);
+
+            if (value.StatusCode == HttpStatusCode.Unauthorized)
+                Logout();
+            
+            return new HttpResponseWrapper<T>(default, false, value.StatusCode);
         }
         catch (HttpRequestException e)
         {
