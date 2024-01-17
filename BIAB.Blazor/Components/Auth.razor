@@ -1,0 +1,45 @@
+﻿@inject AuthorizedHttpClient Http
+
+@if (!Http.IsAuthorized)
+{
+    <div class="whole-page">
+        @if(loading){
+            <h1>Loading...</h1>
+        }
+        else
+        {
+            <h1>Login</h1>
+            <input type="text" @bind="Username"/>
+            <input type="password" @bind="Password"/>
+            <button class="btn btn-primary" @onclick="Login">Login</button>
+        }
+    </div>
+}
+
+<style>
+    .whole-page {
+        width: 100vw;
+        height: 100vh;
+        
+        justify-content: center;
+        align-items: center;
+        text-align: center;
+        background-color: rgba(0,0,0,0.5);
+    }
+</style>
+
+@code {
+    private bool loading { get; set; } = false;
+    private string Username { get; set; }
+    private string Password { get; set; }
+
+    private async Task Login()
+    {
+        loading = true;
+        StateHasChanged();
+        await Http.AttemptLogin(Username, Password);
+        loading = false;
+        StateHasChanged();
+        
+    }
+}

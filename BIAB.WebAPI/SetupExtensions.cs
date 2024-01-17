@@ -224,11 +224,16 @@ public static class SetupExtensions
     /// </summary>
     public delegate DateTime GetDateTimeDelegate();
     
-    private static async Task<IResult> RunAuthenticated<TUser>(UserManager<TUser> manager, ClaimsPrincipal user,
+    public static async Task<IResult> RunAuthenticated<TUser>(this UserManager<TUser> manager, ClaimsPrincipal user,
         Func<TUser, Task<IResult>> authenticatedAction) where TUser : IdentityUser
     {
-        var identityUser = await manager.FindByEmailAsync(user.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Email)?.Value ?? throw new UnauthorizedAccessException());
+        var identityUser = await manager.GetUser(user);
         return identityUser != null ? await authenticatedAction(identityUser) : Results.BadRequest("User not found.");
+    }
+    
+    public static async Task<TUser?> GetUser<TUser>(this UserManager<TUser> manager, ClaimsPrincipal user) where TUser : IdentityUser
+    {
+        return await manager.FindByEmailAsync(user.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Email)?.Value ?? throw new UnauthorizedAccessException());
     }
 
     

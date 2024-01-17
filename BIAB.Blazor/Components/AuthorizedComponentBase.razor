@@ -1,0 +1,45 @@
+﻿@implements IDisposable
+
+
+@inject AuthorizedHttpClient Http
+
+@code {
+    
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+        Http.OnLogin += _OnAuthorized;
+        Http.OnLogout += _OnUnauthorized;
+
+        if (!Http.IsAuthorized)
+            return;
+        
+        await OnAuthorized();
+    }
+    
+    private async void _OnAuthorized()
+    {
+        await OnAuthorized();
+    }
+    
+    private async void _OnUnauthorized()
+    {
+        await OnUnauthorized();
+    }
+
+    public virtual async Task OnUnauthorized()
+    {
+        
+    }
+
+    public virtual async Task OnAuthorized()
+    {
+        
+    }
+
+    public void Dispose()
+    {
+        Http.OnLogin -= _OnAuthorized;
+        Http.OnLogout -= _OnUnauthorized;
+    }
+}

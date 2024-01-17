@@ -7,6 +7,7 @@ public class HttpResponseWrapper<T>
     public bool Success { get; init; }
     public T? Response { get; init; }
     public HttpStatusCode? StatusCode { get; init; }
+    public bool IsSuccessStatusCode => StatusCode.HasValue && (int)StatusCode < 300 && (int)StatusCode >= 200;
     
     public HttpResponseWrapper(T? response, bool success, HttpStatusCode? statusCode = null)
     {
