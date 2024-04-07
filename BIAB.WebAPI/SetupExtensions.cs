@@ -124,6 +124,112 @@ public static class SetupExtensions
         return services;
     }
     
+    public static void AddEntityDb<TEntity>(this IServiceCollection services, DbContext context) where TEntity : class
+    {
+        // Add a Singleton for the type
+        services.AddSingleton(new EntityDb<TEntity>(context));
+    }
+
+    public class EntityDb<TEntity> : IHostedService where TEntity : class
+    {
+        private readonly DbContext _context;
+        private readonly DbSet<TEntity> _dbSet;
+        
+        // Looping Timer
+        private Timer? _timer;
+        private int executionCount = 0;
+        
+        // Cache for the Type to be sent to the db for burst operations
+        Queue<TEntity> _cache = new();
+
+        public EntityDb(DbContext context)
+        {
+            _context = context;
+            _dbSet = _context.Set<TEntity>();
+        }
+        
+        public void Add(TEntity entity)
+        {
+            _cache.Enqueue(entity);
+        }
+        
+        public void AddRange(IEnumerable<TEntity> entities)
+        {
+            foreach (var entity in entities)
+            {
+                _cache.Enqueue(entity);
+            }
+        }
+
+        public async Task SyncToDb()
+        {
+            try
+            {
+                List<TEntity> entitiesSynced = new(_cache);
+                // Sync Each Cache to Db
+                await _dbSet.AddRangeAsync(entitiesSynced);
+                await _context.SaveChangesAsync();
+
+                // Log that the Cache has been synced
+                Console.WriteLine($"EntityDb<{typeof(TEntity).Name}> Synced {entitiesSynced.Count} Entities");
+                // Removed the Synced Entities from the Cache
+                foreach (var entity in entitiesSynced)
+                {
+                    _cache.Dequeue();
+                }
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+                List<TEntity> entitiesSynced = new(_cache);
+                
+                Console.WriteLine($"EntityDb<{typeof(TEntity).Name}> Failed to Sync Cache to Db");
+                Console.WriteLine($"EntityDb<{typeof(TEntity).Name}> Syncing {entitiesSynced.Count} Entities Individually");
+                
+                // Failed to Sync the Cache to the Db
+                // We will try to Sync again individually
+                while (_cache.Dequeue() is { } entity)
+                {
+                    try
+                    {
+                        await _dbSet.AddAsync(entity);
+                        await _context.SaveChangesAsync();
+                    }
+                    catch (Exception exception)
+                    {
+                        Console.WriteLine(exception);
+                    }
+                }
+            }
+        }
+
+
+        public Task StartAsync(CancellationToken cancellationToken)
+        {
+            // Log that the Service has started
+            Console.WriteLine($"EntityDb<{typeof(TEntity).Name}> Started");
+            
+            _timer = new Timer(async _ =>
+            {
+                // Sync the Cache to the Db
+                await SyncToDb();
+                
+                // Increment the Execution Count
+                Interlocked.Increment(ref executionCount);
+            }, null, TimeSpan.Zero, TimeSpan.FromMinutes(1));
+            return Task.CompletedTask;
+        }
+
+        public Task StopAsync(CancellationToken cancellationToken)
+        {
+            Console.WriteLine($"EntityDb<{typeof(TEntity).Name}> Stopped. Final Count: {executionCount}");
+
+            _timer?.Change(Timeout.Infinite, 0);
+
+            return Task.CompletedTask;
+        }
+    }
+    
     /// <summary>
     /// Adds Authentication and Authorization to the Application.
     /// </summary>
