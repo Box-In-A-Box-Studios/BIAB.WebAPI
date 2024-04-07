@@ -23,6 +23,26 @@ public class CRUD_Owned_HardDelete_Tests
         _otherUserRepository = new Repository<CRUDTestDbContext, OwnedHardDeleteEntity, int>(context, context.OwnedHardDeleteEntities, otherRandomId);
     }
 
+    // Test Get and Get Other
+    [Test]
+    public void Get_ShouldWork()
+    {
+        // Arrange
+        var entity = new OwnedHardDeleteEntity();
+        _repository.Create(entity);
+        _repository.SaveChanges();
+        
+        // Act
+        var result = _repository.Get().First(x=>x.Id == entity.Id);
+        var otherResult = _otherUserRepository.Get().FirstOrDefault(x=>x.Id == entity.Id);
+        
+        // Assert
+        Assert.NotNull(result);
+        Assert.AreEqual(randomId, result.OwnerId);
+        Assert.AreEqual(null, otherResult);
+    }
+    
+    
     [Test]
     public void Create_ShouldWork()
     {

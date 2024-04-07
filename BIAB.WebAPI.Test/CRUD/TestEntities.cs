@@ -14,6 +14,11 @@ public class TestEntityWithHardDelete : TestEntity, IHardDelete
     
 }
 
+public class TestEntityNoUpdate : TestEntity, INoUpdate
+{
+    
+}
+
 
 public class TestEntityWithSoftDelete : TestEntity, ISoftDelete
 {
@@ -50,7 +55,6 @@ public class OwnedSoftDeleteEntity : TestEntityWithSoftDelete, IOwnedEntity
 public class OwnedAppendUpdateEntity : TestEntityAppendUpdate, IOwnedEntity, IAppendUpdate<int>
 {
     public string? OwnerId { get; set; }
-    public IdentityUser? Owner { get; set; }
     
     public new IAppendUpdate<int> Copy()
     {

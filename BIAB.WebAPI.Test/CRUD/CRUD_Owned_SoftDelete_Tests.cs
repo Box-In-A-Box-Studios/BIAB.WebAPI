@@ -21,6 +21,25 @@ public class CRUD_Owned_SoftDelete_Tests
         _repository = new Repository<CRUDTestDbContext, OwnedSoftDeleteEntity, int>(context, context.OwnedSoftDeleteEntities, randomId);
         _otherUserRepository = new Repository<CRUDTestDbContext, OwnedSoftDeleteEntity, int>(context, context.OwnedSoftDeleteEntities, otherRandomId);
     }
+
+    // Test Get and Get Other
+    [Test]
+    public void Get_ShouldWork()
+    {
+        // Arrange
+        var entity = new OwnedSoftDeleteEntity();
+        _repository.Create(entity);
+        _repository.SaveChanges();
+        
+        // Act
+        var result = _repository.Get().First(x=>x.Id == entity.Id);
+        var otherResult = _otherUserRepository.Get().FirstOrDefault(x=>x.Id == entity.Id);
+        
+        // Assert
+        Assert.NotNull(result);
+        Assert.AreEqual(randomId, result.OwnerId);
+        Assert.AreEqual(null, otherResult);
+    }
     
     
     [Test]
