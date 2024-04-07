@@ -1,0 +1,13 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE rules SYSTEM "https://resources.jetbrains.com/writerside/1.0/redirection-rules.dtd">
+<rules>
+    <!-- format is as follows
+    <rule id="<unique id>">
+        <accepts>page.html</accepts>
+    </rule>
+    -->
+    <rule id="5f112e1b">
+        <description>Created after removal of "About BIAB.WebAPI.Wiki" from BIAB.WebAPI.Wiki</description>
+        <accepts>starter-topic.html</accepts>
+    </rule>
+</rules>

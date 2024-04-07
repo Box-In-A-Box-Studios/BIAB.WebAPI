@@ -1,0 +1,10 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE instance-profile
+        SYSTEM "https://resources.jetbrains.com/writerside/1.0/product-profile.dtd">
+
+<instance-profile id="b"
+                 name="BIAB.WebAPI.Wiki"
+                 start-page="CRUD.md">
+
+    <toc-element topic="CRUD.md"/>
+</instance-profile>
