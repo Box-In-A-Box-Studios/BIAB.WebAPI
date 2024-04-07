@@ -26,7 +26,7 @@ public class Repository<TDbContext, TEntity, TId> : IDisposable
         return _dbSet;
     }
 
-    public IQueryable<TEntity> Get()
+    public virtual IQueryable<TEntity> Get()
     {
         IQueryable<TEntity> query = _dbSet;
         
@@ -46,7 +46,7 @@ public class Repository<TDbContext, TEntity, TId> : IDisposable
         return query;
     }
     
-    public void Create(TEntity entity)
+    public virtual void Create(TEntity entity)
     {
         if (IsOwnedEntity)
         { // If Owned Entity, then set the OwnerId to the user's Id
@@ -55,7 +55,7 @@ public class Repository<TDbContext, TEntity, TId> : IDisposable
         _dbSet.Add(entity);
     }
 
-    public void Update(TEntity entity)
+    public virtual void Update(TEntity entity)
     {
         if (IsOwnedEntity)
         {
@@ -88,7 +88,7 @@ public class Repository<TDbContext, TEntity, TId> : IDisposable
     }
     
     
-    public void Delete(TEntity entity)
+    public virtual void Delete(TEntity entity)
     {
         if (IsOwnedEntity)
         {
@@ -113,17 +113,17 @@ public class Repository<TDbContext, TEntity, TId> : IDisposable
         }
     }
     
-    public void SaveChanges()
+    public virtual void SaveChanges()
     {
         _context.SaveChanges();
     }
     
-    public async Task SaveChangesAsync()
+    public virtual async Task SaveChangesAsync()
     {
         await _context.SaveChangesAsync();
     }
     
-    public void Dispose()
+    public virtual void Dispose()
     {
         _context.Dispose();
     }

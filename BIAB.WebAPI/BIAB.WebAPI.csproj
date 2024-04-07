@@ -6,7 +6,7 @@
         <WarningsAsErrors>Nullable</WarningsAsErrors>
         <PackageLicenseExpression>MIT</PackageLicenseExpression>
         <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-        <Version>0.2.1</Version>
+        <Version>0.3.1</Version>
         <Title>Box In A Box Web API Library</Title>
         <Authors>GTextreme169</Authors>
         <RepositoryUrl>https://github.com/GTextreme169/BIAB.WebAPI</RepositoryUrl>
