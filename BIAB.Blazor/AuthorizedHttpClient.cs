@@ -47,6 +47,15 @@ public class AuthorizedHttpClient
 
     #region Authorization Methods
 
+    public async Task Register(RegisterModel model)
+    {
+        var result = await PostAsJsonAsync<string>("/auth/register", model, true);
+        if (result.Success)
+        {
+            await AttemptLogin(model.Email, model.Password);
+        }
+    }
+    
     // Login method to set the authorization header
     public async Task<bool> AttemptLogin(string username, string password)
     {
@@ -132,7 +141,15 @@ public class AuthorizedHttpClient
         {
             var value = await method;
             if (value.IsSuccessStatusCode)
+            {
+                if (value.StatusCode == HttpStatusCode.NoContent)
+                    return new HttpResponseWrapper<T>(default, true, value.StatusCode);
+                
+                if (typeof(T) == typeof(string))
+                    return new HttpResponseWrapper<T>((T)(object)await value.Content.ReadAsStringAsync(), true, value.StatusCode);
+                
                 return new HttpResponseWrapper<T>(await value.Content.ReadFromJsonAsync<T>(), true, value.StatusCode);
+            }
 
             if (value.StatusCode == HttpStatusCode.Unauthorized)
                 Logout();

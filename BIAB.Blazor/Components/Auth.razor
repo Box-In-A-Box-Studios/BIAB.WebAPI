@@ -1,4 +1,5 @@
-﻿@inject AuthorizedHttpClient Http
+﻿@using BIAB.WebAPI.Shared.Models
+@inject AuthorizedHttpClient Http
 
 @if (!Http.IsAuthorized)
 {
@@ -8,16 +9,30 @@
         }
         else
         {
-            <h1>Login</h1>
-            <input type="text" @bind="Username"/>
-            <input type="password" @bind="Password"/>
-            <button class="btn btn-primary" @onclick="Login">Login</button>
+            <div class="align-middle justify-content-center text-center" style="margin-top:calc(40vh - 100px); width: 400px; margin-left: calc(50vw - 200px);">
+                <div class="row">
+
+                    <h1>Login</h1>
+                    <input class="form-control" type="text" @bind="Username"/>
+                    <input class="form-control" type="password" @bind="Password"/>
+                    <button class="btn btn-primary" @onclick="Login">Login</button>
+                    <button class="btn btn-primary" @onclick="Register">Register</button>
+
+                    
+                </div>
+            </div>
+            
         }
     </div>
 }
 
 <style>
     .whole-page {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
         width: 100vw;
         height: 100vh;
         
@@ -40,6 +55,19 @@
         await Http.AttemptLogin(Username, Password);
         loading = false;
         StateHasChanged();
-        
+    }
+    
+    private async Task Register()
+    {
+        loading = true;
+        StateHasChanged();
+        RegisterModel registerModel = new RegisterModel
+        {
+            Email = Username,
+            Password = Password
+        };
+        await Http.Register(registerModel);
+        loading = false;
+        StateHasChanged();
     }
 }
