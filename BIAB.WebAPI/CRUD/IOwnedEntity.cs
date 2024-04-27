@@ -5,3 +5,8 @@ public interface IOwnedEntity
 {
     public string? OwnerId { get; set; }
 }
+
+public interface IOwnedEntity<T> : IOwnedEntity
+{
+    public T? Owner { get; set; }
+}

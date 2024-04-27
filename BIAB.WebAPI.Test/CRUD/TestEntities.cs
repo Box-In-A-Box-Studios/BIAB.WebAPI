@@ -1,4 +1,5 @@
 ﻿using BIAB.WebAPI.CRUD;
+using BIAB.WebAPI.Shared.Enums;
 using Microsoft.AspNetCore.Identity;
 
 namespace BIAB.WebAPI.Test.CRUD;
@@ -66,4 +67,21 @@ public class OwnedAppendUpdateEntity : TestEntityAppendUpdate, IOwnedEntity, IAp
             OwnerId = OwnerId
         };
     }
+}
+
+public class TestEntityAccessor : TestEntity, IAccessorEntity<int, TestEntityWithAccessor>
+{
+    public string? OwnerId { get; set; }
+    public IdentityUser? Owner { get; set; }
+    public int RelationId { get; set; }
+    public TestEntityWithAccessor? Relation { get; set; }
+    public AccessorType AccessorType { get; set; }
+}
+
+public class TestEntityWithAccessor : TestEntity, IOwnedEntity, IHasAccessor<int, TestEntityWithAccessor, TestEntityAccessor>
+{
+    public string? OwnerId { get; set; }
+    public IdentityUser? Owner { get; set; }
+    
+    public List<TestEntityAccessor> Accessors { get; set; } = new();
 }

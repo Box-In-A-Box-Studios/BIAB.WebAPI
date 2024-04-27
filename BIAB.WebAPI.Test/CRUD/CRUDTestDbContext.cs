@@ -16,4 +16,8 @@ public class CRUDTestDbContext : DbContext
     public DbSet<OwnedHardDeleteEntity> OwnedHardDeleteEntities => Set<OwnedHardDeleteEntity>();
     public DbSet<OwnedSoftDeleteEntity> OwnedSoftDeleteEntities => Set<OwnedSoftDeleteEntity>();
     public DbSet<OwnedAppendUpdateEntity> OwnedAppendUpdateEntities => Set<OwnedAppendUpdateEntity>();
+    
+    
+    public DbSet<TestEntityWithAccessor> TestEntitiesWithAccessor => Set<TestEntityWithAccessor>();
+    public DbSet<TestEntityAccessor> TestEntitiesAccessor => Set<TestEntityAccessor>();
 }

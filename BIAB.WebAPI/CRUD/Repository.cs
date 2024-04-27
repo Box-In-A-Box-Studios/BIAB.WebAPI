@@ -5,13 +5,11 @@ namespace BIAB.WebAPI.CRUD;
 public class Repository<TDbContext, TEntity, TId> : IDisposable
     where TDbContext : DbContext
     where TEntity : class, IHasId<TId>, new()
-    where TId : struct
 {
     private readonly TDbContext _context;
     private readonly DbSet<TEntity> _dbSet;
     private readonly string? _ownerId;
     private readonly bool IsOwnedEntity = typeof(IOwnedEntity).IsAssignableFrom(typeof(TEntity));
-
     public Repository(TDbContext context, DbSet<TEntity> dbSet, string? ownerId = null)
     {
         _context = context;
@@ -69,7 +67,7 @@ public class Repository<TDbContext, TEntity, TId> : IDisposable
         {
             // Create a new record with the same data as the old record
             var newRecord = appendUpdate.Copy();
-            newRecord.Id = default;
+            newRecord.Id = default!;
             newRecord.OriginId = entity.Id;
             
             // Drop All Changes to the Old Record
