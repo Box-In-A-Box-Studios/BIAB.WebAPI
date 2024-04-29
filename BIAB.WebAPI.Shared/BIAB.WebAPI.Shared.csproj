@@ -8,6 +8,7 @@
         <Title>BIAB.WebAPI.Shared</Title>
         <Authors>GTextreme169</Authors>
         <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+        <Version>1.0.1-beta</Version>
     </PropertyGroup>
 
 </Project>

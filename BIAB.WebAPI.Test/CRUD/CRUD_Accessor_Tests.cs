@@ -85,4 +85,20 @@ public class CRUD_Accessor_Tests
         Assert.AreEqual("1", result[0].Relation.OwnerId); // Original Owner Still Owns the Entity
         Assert.AreEqual("2", result[0].OwnerId); // Accessor Owner
     }
+    
+    // Fail to get the entity because the owner is different
+    [Test]
+    public void GetFail()
+    {
+        // Arrange
+        var entity = new TestEntityWithAccessor();
+        _repository.Create(entity);
+        _repository.SaveChanges();
+        
+        // Act
+        var result = _accessorRepository.Get().ToList();
+        
+        // Assert
+        Assert.AreEqual(0, result.Count);
+    }
 }

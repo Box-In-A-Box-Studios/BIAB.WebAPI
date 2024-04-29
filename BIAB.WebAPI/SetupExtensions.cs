@@ -11,6 +11,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.IdentityModel.Tokens;
@@ -265,6 +266,7 @@ public static class SetupExtensions
     public static TSettings AddSettings<TSettings>(this WebApplicationBuilder builder) where TSettings : ApiSettings, new()
     {
         TSettings settings = new TSettings();
+        builder.Configuration.AddEnvironmentVariables();
         settings.SetConfiguration(builder.Configuration);
         builder.Services.AddSingleton<ApiSettings>(settings);
         builder.Services.AddSingleton(settings);

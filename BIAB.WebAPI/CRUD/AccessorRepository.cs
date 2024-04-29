@@ -34,7 +34,7 @@ public class AccessorRepository<TDbContext, TAccessorEntity, TRelatedEntity, TId
 
         query = query.Include(x => x.Relation);
         
-        return query;
+        return query.AsNoTracking();
     }
     
     
