@@ -1,5 +1,6 @@
 ﻿@using BIAB.WebAPI.Shared.Models
 @inject AuthorizedHttpClient Http
+@inherits AuthorizedComponentBase
 
 @if (!Http.IsAuthorized)
 {
@@ -70,4 +71,17 @@
         loading = false;
         StateHasChanged();
     }
+
+    public override Task OnAuthorized()
+    {
+        StateHasChanged();
+        return base.OnAuthorized();
+    }
+
+    public override Task OnUnauthorized()
+    {
+        StateHasChanged();
+        return base.OnUnauthorized();
+    }
+
 }

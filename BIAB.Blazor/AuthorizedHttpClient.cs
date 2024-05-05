@@ -9,6 +9,7 @@ namespace BIAB.Blazor;
 public class AuthorizedHttpClient
 {
     public bool IsAuthorized { get; private set; }
+    public LoginResponse? Login { get; private set; }
     
     protected HttpClient HttpClient { get; private set; }
     
@@ -65,10 +66,16 @@ public class AuthorizedHttpClient
             Password = password
         };
         LoginResponse? response = await PostAsJsonAsync<LoginResponse>("/auth/login", model, true);
+        return await AttemptLogin(response);
+    }  
+    // Login method to set the authorization header
+    public async Task<bool> AttemptLogin(LoginResponse? response)
+    {
         if (response != null)
         {
             HttpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", response.Token);
             IsAuthorized = true;
+            Login = response;
             OnLogin?.Invoke();
         }else {
             IsAuthorized = false;
