@@ -26,4 +26,7 @@
     <ItemGroup>
       <Folder Include="wwwroot\" />
     </ItemGroup>
+    <ItemGroup>
+      <PackageReference Include="Blazored.SessionStorage" Version="2.4.0" />
+    </ItemGroup>
 </Project>

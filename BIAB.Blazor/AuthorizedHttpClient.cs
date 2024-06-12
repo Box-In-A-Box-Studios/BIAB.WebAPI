@@ -3,6 +3,7 @@ using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using BIAB.WebAPI.Shared.Models;
 using BIAB.WebAPI.Shared.Responses;
+using Blazored.SessionStorage;
 
 namespace BIAB.Blazor;
 
@@ -18,20 +19,50 @@ public class AuthorizedHttpClient
     
     public delegate void LoginHandler();
     public event LoginHandler? OnLogin;
+    
+    private const string LoginTokenKey = "loginToken";
+    
+    private ISessionStorageService? _sessionStorageService;
+    public async Task TryToGetExistingLogin(ISessionStorageService? sessionStorage)
+    {
+        if (IsAuthorized)
+        {
+            return;
+        }
+        if (sessionStorage == null)
+        {
+            return;
+        }
+        
+        string? token = await sessionStorage.GetItemAsync<string>(LoginTokenKey);
+        if (string.IsNullOrEmpty(token))
+        {
+            return;
+        }
+        
+        LoginResponse? response = new LoginResponse
+        {
+            Token = token
+        };
+        await AttemptLogin(response);
+    }
 
     #region Constructors
 
-    public AuthorizedHttpClient(HttpClient httpClient, string baseAddress, string bearerToken) : this(httpClient, baseAddress)
+    public AuthorizedHttpClient(HttpClient httpClient, string baseAddress, string bearerToken, ISessionStorageService? sessionStorageService = null) : this(httpClient, baseAddress)
     {
+        _sessionStorageService = sessionStorageService;
         if (string.IsNullOrEmpty(bearerToken))
         {
             IsAuthorized = false;
+            TryToGetExistingLogin(_sessionStorageService);
         }
         else
         {
             HttpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", bearerToken);
             IsAuthorized = true;
-            OnLogout?.Invoke();
+            sessionStorageService?.SetItemAsync("loginToken", bearerToken);
+            OnLogin?.Invoke();
         }
     }
     
@@ -76,6 +107,8 @@ public class AuthorizedHttpClient
             HttpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", response.Token);
             IsAuthorized = true;
             Login = response;
+            if (_sessionStorageService != null)
+                await _sessionStorageService.SetItemAsync(LoginTokenKey, response.Token);
             OnLogin?.Invoke();
         }else {
             IsAuthorized = false;
